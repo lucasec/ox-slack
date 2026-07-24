@@ -52,14 +52,23 @@
   '(
     (bold . org-slack-bold)
     (code . org-slack-code)
+    (entity . org-slack-entity)
+    (footnote-reference . org-slack-footnote-reference)
     (headline . org-slack-headline)
     (inner-template . org-slack-inner-template)
     (italic . org-slack-italic)
     (link . org-slack-link)
     (plain-text . org-slack-plain-text)
+    (radio-target . org-slack-radio-target)
     (src-block . org-slack-src-block)
+    (statistics-cookie . org-slack-statistics-cookie)
     (strike-through . org-slack-strike-through)
-    (timestamp . org-slack-timestamp)))
+    (subscript . org-slack-subscript)
+    (superscript . org-slack-superscript)
+    (target . org-slack-target)
+    (timestamp . org-slack-timestamp)
+    (underline . org-slack-underline)
+    (verse-block . org-slack-verse-block)))
 
 (defun org-slack-trim-final-output (text _backend _info)
   "Trim leading and trailing blank lines from the whole export TEXT."
@@ -166,8 +175,7 @@ communication channel."
   (format "`%s`"
           (org-element-property :value code)))
 
-  ;;;; Italic
-
+;;;; Italic
 (defun org-slack-italic (_italic contents _info)
   "Transcode italic from Org to SLACK.
   CONTENTS is the text with italic markup.  INFO is a plist holding
@@ -189,31 +197,76 @@ communication channel."
   holding contextual information."
   (format "~%s~" contents))
 
+;;;; Underline
+(defun org-slack-underline (_underline contents _info)
+  "Transcode an UNDERLINE object into Slack format.
+CONTENTS is the text with underline markup.  INFO is a plist used as a
+communication channel."
+  contents)
 
-(defun org-slack-inline-src-block (inline-src-block _contents info)
-  "Transcode an INLINE-SRC-BLOCK element from Org to SLACK.
-  CONTENTS holds the contents of the item.  INFO is a plist holding
-  contextual information."
-  (format "`%s`"
-          (org-element-property :value inline-src-block)))
+;;;; Subscript / Superscript
+(defun org-slack-subscript (_subscript contents _info)
+  "Transcode a SUBSCRIPT object into Slack format.
+CONTENTS is the contents of the object.  INFO is a plist used as a
+communication channel."
+  contents)
+
+(defun org-slack-superscript (_superscript contents _info)
+  "Transcode a SUPERSCRIPT object into Slack format.
+CONTENTS is the contents of the object.  INFO is a plist used as a
+communication channel."
+  contents)
+
+;;;; Entity
+(defun org-slack-entity (entity _contents _info)
+  "Transcode an ENTITY object into Slack format.
+CONTENTS is nil.  INFO is a plist used as a communication channel."
+  ;; Use the Unicode representation (e.g. `\alpha' -> "α") rather than
+  ;; the gfm/md HTML entities
+  (org-element-property :utf-8 entity))
+
+;;;; Target
+(defun org-slack-target (_target _contents _info)
+  "Transcode a TARGET object into Slack format.
+CONTENTS is nil.  INFO is a plist used as a communication channel."
+  ;; Targets are invisible cross-reference anchors with no Slack
+  ;; equivalent, emit nothing.
+  "")
+
+;;;; Radio target
+(defun org-slack-radio-target (_radio-target contents _info)
+  "Transcode a RADIO-TARGET object into Slack format.
+CONTENTS is the text of the target.  INFO is a plist used as a
+communication channel."
+  ;; Emit just the text, Slack has no anchors
+  contents)
+
+;;;; Statistics cookie
+(defun org-slack-statistics-cookie (statistics-cookie _contents _info)
+  "Transcode a STATISTICS-COOKIE object into Slack format.
+CONTENTS is nil.  INFO is a plist used as a communication channel."
+  ;; Emit the literal cookie value (the GFM/MD exporters wrap this in
+  ;; a `<code>' element)
+  (org-element-property :value statistics-cookie))
+
+;;;; Verse block
+(defun org-slack-verse-block (_verse-block contents _info)
+  "Transcode a VERSE-BLOCK element into Slack format.
+CONTENTS is verse block contents.  INFO is a plist used as a
+communication channel."
+  ;; Just trim leading block indentation. Slack doesn't mangle spaces
+  ;; and can't parse the HTML entities
+  (string-trim-right contents))
 
 ;;;; Src Block
-(defun org-slack-src-block (src-block contents info)
-  "Transcode SRC-BLOCK element into Github Flavored Markdown format.
-  CONTENTS is nil. INFO is a plist used as a communication
-  channel."
+(defun org-slack-src-block (src-block _contents info)
+  "Transcode SRC-BLOCK element into Slack format.
+CONTENTS is nil. INFO is a plist used as a communication channel."
   (let* ((lang (org-element-property :language src-block))
          (code (org-export-format-code-default src-block info))
          (prefix (concat "```"  "\n"))
          (suffix "```"))
     (concat prefix code suffix)))
-
-;;;; Quote Block
-(defun org-slack-quote-block (_quote-block contents info)
-  "Transcode a QUOTE-BLOCK element from Org to SLACK.
-  CONTENTS holds the contents of the block.  INFO is a plist
-  holding contextual information."
-  (org-slack--indent-string contents (plist-get info :slack-quote-margin)))
 
 ;; ;; Footnotes and Inner Template
 (defun org-slack-footnote-reference (footnote-reference _contents info)
@@ -246,7 +299,7 @@ communication channel."
 
 ;;;; Plain text
 (defun org-slack-plain-text (text info)
-  "Transcode a TEXT string into Markdown format.
+  "Transcode a TEXT string into Slack format.
   TEXT is the string to transcode.  INFO is a plist holding
   contextual information."
   ;; (when (plist-get info :with-smart-quotes)
