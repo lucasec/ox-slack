@@ -215,23 +215,34 @@ communication channel."
   holding contextual information."
   (org-slack--indent-string contents (plist-get info :slack-quote-margin)))
 
+;; ;; Footnotes and Inner Template
+(defun org-slack-footnote-reference (footnote-reference _contents info)
+  "Transcode a FOOTNOTE-REFERENCE element into Slack format.
+CONTENTS is nil.  INFO is a plist used as a communication channel."
+  ;; Slack has neither superscript nor anchors, so render the
+  ;; reference as its number in brackets, e.g. `[1]'.
+  (format "[%s]" (org-export-get-footnote-number footnote-reference info)))
+
+(defun org-slack--footnote-section (info)
+  "Build the footnotes section for Slack, or nil when there are none.
+Each definition is emitted as `[N] text' under a bold heading, mirroring
+the bracketed `[N]' inline references.  INFO is a plist used as a
+communication channel."
+  (let ((definitions (org-export-collect-footnote-definitions info)))
+    (when definitions
+      (concat
+       "*Footnotes*\n\n"
+       (mapconcat
+        (pcase-lambda (`(,n ,_type ,raw))
+          (format "[%s] %s" n (org-trim (org-export-data raw info))))
+        definitions
+        "\n")))))
 
 (defun org-slack-inner-template (contents info)
-  "Return body of document after converting it to Markdown syntax.
+  "Return body of document after converting it to Slack format.
   CONTENTS is the transcoded contents string.  INFO is a plist
   holding export options."
-  ;; Make sure CONTENTS is separated from table of contents and
-  ;; footnotes with at least a blank line.
-  (concat
-   ;; Table of contents.
-   ;; (let ((depth (plist-get info :with-toc)))
-   ;;   (when depth
-   ;;     (concat (org-md--build-toc info (and (wholenump depth) depth)) "\n")))
-   ;; Document contents.
-   contents
-   "\n"
-   ;; Footnotes section.
-   (org-md--footnote-section info)))
+  (concat contents "\n" (org-slack--footnote-section info)))
 
 ;;;; Plain text
 (defun org-slack-plain-text (text info)
