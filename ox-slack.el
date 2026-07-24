@@ -77,28 +77,17 @@ CONTENTS is nil.  INFO is a plist used as a communication channel."
 
 ;; headline
 (defun org-slack-headline (headline contents info)
-  "Transcode HEADLINE element into Markdown format.
-CONTENTS is the headline contents.  INFO is a plist used as
-a communication channel."
+  "Transcode HEADLINE element into Slack format.
+CONTENTS is the headline's body, or nil when it has none.  INFO is a
+plist used as a communication channel."
   (unless (org-element-property :footnote-section-p headline)
-    (let* ((level (org-export-get-relative-level headline info))
-           (title (org-export-data (org-element-property :title headline) info))
-           (todo (and (plist-get info :with-todo-keywords)
-                      (let ((todo (org-element-property :todo-keyword
-                                                        headline)))
-                        (and todo (concat (org-export-data todo info) " ")))))
-           (tags (and (plist-get info :with-tags)
-                      (let ((tag-list (org-export-get-tags headline info)))
-                        (and tag-list
-                             (concat "     " (org-make-tag-string tag-list))))))
-           (priority
-            (and (plist-get info :with-priority)
-                 (let ((char (org-element-property :priority headline)))
-                   (and char (format "[#%c] " char)))))
-           ;; Headline text without tags.
-           (heading (concat todo priority title)))
-      (format "*%s*\n\n%s" title contents)
-      )))
+    ;; Nested bold markup will break formatting, so strip it out
+    (let ((title (replace-regexp-in-string
+                  "\\*" ""
+                  (org-export-data (org-element-property :title headline) info))))
+      (if (org-string-nw-p contents)
+          (format "*%s*\n\n%s" title contents)
+        (format "*%s*" title)))))
 
 ;; link
 (defun org-slack-link (link contents info)
