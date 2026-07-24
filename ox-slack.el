@@ -46,6 +46,8 @@
   ;;           (lambda (a s v b)
   ;;             (if a (org-slack-export-to-slack t s v)
   ;;               (org-open-file (org-slack-export-to-slack nil s v)))))))
+  :filters-alist
+  '((:filter-final-output . org-slack-trim-final-output))
   :translate-alist
   '(
     (bold . org-slack-bold)
@@ -58,6 +60,10 @@
     (src-block . org-slack-src-block)
     (strike-through . org-slack-strike-through)
     (timestamp . org-slack-timestamp)))
+
+(defun org-slack-trim-final-output (text _backend _info)
+  "Trim leading and trailing blank lines from the whole export TEXT."
+  (string-trim text))
 
 ;; timestamp
 (defun org-slack-timestamp (timestamp _contents _info)
