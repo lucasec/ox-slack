@@ -34,18 +34,12 @@
 (require 'ox-gfm)
 
 (org-export-define-derived-backend 'slack 'gfm
-  ;; for now, I just have this commented out
-  ;; might be better to create a defcustom to
-  ;; decide whether to add this to the export dispatcher
-  ;; :menu-entry
-  ;; '(?s "Export to Slack syntax"
-  ;;      ((?s "To temporary buffer"
-  ;;           (lambda (a s v b) (org-slack-export-as-slack a s v)))
-  ;;       (?S "To file" (lambda (a s v b) (org-slack-export-to-slack a s v)))
-  ;;       (?o "To file and open"
-  ;;           (lambda (a s v b)
-  ;;             (if a (org-slack-export-to-slack t s v)
-  ;;               (org-open-file (org-slack-export-to-slack nil s v)))))))
+  :menu-entry
+  '(?s "Export to Slack"
+       ((?S "To temporary buffer"
+            (lambda (a s v b) (org-slack-export-as-slack a s v)))
+        (?w "To kill ring"
+            (lambda (a s v b) (kill-new (org-export-as 'slack s v))))))
   :filters-alist
   '((:filter-final-output . org-slack-trim-final-output))
   :translate-alist
@@ -394,15 +388,13 @@ communication channel."
       async subtreep visible-only body-only ext-plist)))
 
 ;;;###autoload
-(defun org-slack-export-to-clipboard-as-slack ()
-  "Export region to slack, and copy to the kill ring for pasting into other programs."
+(defun org-slack-copy-subtree-as-slack ()
+  "Export the current subtree to slack, and copy to the kill ring."
   (interactive)
   (let* ((org-export-with-toc nil)
          (org-export-with-smart-quotes nil))
-    (kill-new (org-export-as 'slack) ))
-  )
+    (kill-new (org-export-as 'slack t))))
 
-;; (org-export-register-backend 'slack)
 (provide 'ox-slack)
 
 ;; Local variables:
